@@ -1,0 +1,1308 @@
+---
+title: "清大學生手機成癮狀況分析"
+author: '109048207_詹子翎'
+date: "(2023-6-20)"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+    toc_float: true
+    collapsed: no
+    smooth_scroll: true
+    df_print: paged
+    highlight: zenburn
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,  
+                      comment = "",   
+                      dev.args = list(pointsize = 13, bg = "#FFFFF0"))  
+options(knitr.table.format="html")
+ptable = function(df,digits = getOption("digits"),size = 14){
+  df %>% knitr::kable(digits = digits) %>% 
+    kable_classic(lightable_options = c("striped", "hover", "condensed", "responsive"),
+                  fixed_thead = list(enabled = T,background = "#6b8e23"),
+                  font_size = size, full_width = F,
+                  html_font = "ebrima")
+}
+```
+
+```{r,include=FALSE}
+library(broom)
+library(skimr)
+library(psych)
+library(kableExtra)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+library(stringr)
+library(nycflights13)
+library(stringr)
+library(scales)
+library(shiny)
+library(lubridate)
+library(lmtest)
+library(gridExtra)
+library(extrafont)
+library(knitr)
+```
+
+
+## 一、主題  
+#### 清大學生手機使用狀況與相關因素分析。  
+
+## 二、動機  
+#### 大三這一年住宿舍，剛好被分配到和兩個大二生和一個大五生一起住，所以可以近距離觀察到她們使用手機的習慣與使用的時間，其中一位大二生常常習慣先花很多時間漫無目的的滑手機後，再努力熬夜趕報告或讀書；另外兩位大二生和大五生則是會花很多時間打遊戲。除了室友可以讓我觀察之外，身邊清大大二的朋友最近也跟我提到，他們平常會盲目每天滑IG兩個小時的情況。在接收了上述的幾種，清大生使用手機的狀況後，我便萌生想要進一步探討並歸納清大生使用手機的時間，是否和一些因素有關聯，或是和一些表現出來的行為有關聯。   
+
+
+## 三、使用的數據  
+#### 我將使用由同一份問卷所得到的，先後修同一堂課的學生們所填答的三份結果，分別是2022年、2021年以及2020年的資料。  
+#### 資料1(2020). 
+
+<details>
+  <sur1>Sur1-Code</sur1>
+```{r survey1}
+survey1 <- read.csv("/Users/jaquelyntl/Downloads/Survey1.csv",header = TRUE, fileEncoding = 'big5')
+
+survey1 %>%
+  kable(align='c') %>%
+  kable_styling(bootstrap_options = "bordered", full_width = F, font_size = 12) %>% 
+  column_spec(6, bold = T, color = "#FFFFF0", background = "#F4C2C2") %>%
+  column_spec(7, bold = T, color = "#F4C2C2", background = "#FFFFF0") %>%
+  row_spec(0, bold = T)  %>%
+  scroll_box(height = "200px")
+```
+
+</details>
+  
+#### 資料2(2021). 
+
+<details>
+  <sur2>Sur2-Code</sur2>
+```{r}
+survey2 <- read.csv("/Users/jaquelyntl/Downloads/Survey2.csv",header = TRUE, fileEncoding = 'big5')
+
+survey2 %>%
+  kable(align='c') %>%
+  kable_styling(bootstrap_options = "bordered", full_width = F, font_size = 12) %>% 
+  column_spec(6, bold = T, color = "#FFFFF0", background = "#F4C2C2") %>%
+  column_spec(7, bold = T, color = "#F4C2C2", background = "#FFFFF0") %>%
+  row_spec(0, bold = T)  %>%
+  scroll_box(height = "200px") 
+```
+
+</details> 
+
+#### 資料3(2022). 
+
+<details>
+  <sur3>Sur3-Code</sur3>
+```{r}
+survey3 <- read.csv("/Users/jaquelyntl/Downloads/Survey3.csv",header = TRUE, fileEncoding = 'big5')
+
+survey3 %>%
+  kable(align='c') %>%
+  kable_styling(bootstrap_options = "bordered", full_width = F, font_size = 12) %>% 
+  column_spec(6, bold = T, color = "#FFFFF0", background = "#F4C2C2") %>%
+  column_spec(7, bold = T, color = "#F4C2C2", background = "#FFFFF0") %>%
+  row_spec(0, bold = T)  %>%
+  scroll_box(height = "200px") 
+```
+
+</details>   
+
+## 四、分析方法以及探討的問題  
+
+#### A. 處理資料裡的特殊、缺漏值以及字串 
+* 將特定字串值（例如：如果沒有在等重要訊息可以一直不看）轉換為適當的數值：  
+
+<details>
+  <cha3>Cha3-Code</cha3>
+```{r}
+# 將資料框中的文字取代為數字 0
+survey3[survey3$忍受手機時間 %in% c("如果沒有在等重要訊息可以一直不看", "可以都不看"), "忍受手機時間"] <- 0
+
+#使用手機時間：10~30min/次、1-2小時
+survey3[survey3$使用手機時間 %in% c("10~30min/次"), "使用手機時間"] <- 20
+survey3[survey3$使用手機時間 %in% c("1-2小時"), "使用手機時間"] <- 90
+
+#飲料杯：0~2、少於一個
+survey3[survey3$飲料杯 %in% c("0~2","少於一個"), "飲料杯"] <- 1
+
+#餐盒：0~3、少於三個
+survey3[survey3$餐盒 %in% c("0~3","少於三個"), "餐盒"] <- 1.5
+```
+
+</details>   
+
+* 將特定數據轉換為數值型態：  
+
+<details>
+  <chaa>Chaa-Code</chaa>
+```{r}
+survey1 <- survey1 %>%
+  mutate(身高 = as.numeric(身高),
+         體重 = as.numeric(體重),
+         忍受手機時間 = as.numeric(忍受手機時間),
+         使用手機時間 = as.numeric(使用手機時間),
+         飲料杯 = as.numeric(飲料杯),
+         餐盒 = as.numeric(餐盒))
+survey2 <- survey2 %>%
+  mutate(身高 = as.numeric(身高),
+         體重 = as.numeric(體重),
+         忍受手機時間 = as.numeric(忍受手機時間),
+         使用手機時間 = as.numeric(使用手機時間),
+         飲料杯 = as.numeric(飲料杯),
+         餐盒 = as.numeric(餐盒))
+survey3 <- survey3 %>%
+  mutate(身高 = as.numeric(身高),
+         體重 = as.numeric(體重),
+         忍受手機時間 = as.numeric(忍受手機時間),
+         使用手機時間 = as.numeric(使用手機時間),
+         飲料杯 = as.numeric(飲料杯),
+         餐盒 = as.numeric(餐盒))
+```
+
+</details>
+
+
+* 確認每個變數裡的遺漏值總數：  
+
+<details>
+  <mis>Mis-Code</mis>
+```{r}
+cols1 <- as.data.frame(colSums(is.na(survey1)))
+colnames(cols1) <- "Missing Counts"
+
+table1 <- 
+  kable(cols1, align = "c", caption = "Survey1 Missing Value") %>%
+  kable_styling(font_size = 12, bootstrap_options = "bordered", full_width = FALSE) %>%
+  column_spec(2, bold = T, color = "#FFFFF0", background = "#F4C2C2") %>%
+  row_spec(0, bold = T) %>%  
+  scroll_box(height = "200px")
+
+
+cols2 <- as.data.frame(colSums(is.na(survey2)))
+colnames(cols2) <- "Missing Counts"
+
+table2 <-
+  kable(cols2, align = "c", caption = "Survey2 Missing Value") %>%
+  kable_styling(font_size = 12, bootstrap_options = "bordered", full_width = FALSE) %>%
+  column_spec(2, bold = T, color = "#FFFFF0", background = "#F4C2C2") %>%
+  row_spec(0, bold = T) %>%  
+  scroll_box(height = "200px")
+
+
+cols3 <- as.data.frame(colSums(is.na(survey3)))
+colnames(cols3) <- "Missing Counts"
+
+table3 <- 
+  kable(cols3, align = "c", caption = "Survey3 Missing Value") %>%
+  kable_styling(font_size = 12, bootstrap_options = "bordered", full_width = FALSE) %>%
+  column_spec(2, bold = T, color = "#FFFFF0", background = "#F4C2C2") %>%
+  row_spec(0, bold = T) %>%  
+  scroll_box(height = "200px")
+
+table1_html <- as.character(table1)
+table2_html <- as.character(table2)
+table3_html <- as.character(table3)
+
+# 使用 HTML 或 CSS 進行自訂樣式
+html <- '
+<div style="display: flex;">
+  <div style="width: 33%; padding: 10px;">' 
+html <- paste0(html, table1_html, '</div>
+  <div style="width: 33%; padding: 10px;">', table2_html, '</div>
+  <div style="width: 33%; padding: 10px;">', table3_html, '</div>
+</div>')
+```
+
+</details>
+```{r}
+# 輸出並顯示圖表
+htmltools::HTML(html)
+```
+
+
+#### B. 分析不同變因（性別、年級、飲料杯、餐盒）和手機使用時間之間的相關性  
+分析方法：個別針對每個因素和使用時間進行「迴歸分析」，並針對因素間的關係繪製統計圖。（以 Survey1為例，Survey2,3在Appendix ）  
+
+### Survey1:  
+
+1. 使用手機時間和性別之間是否有關係？
+
+<details>
+  <gender1>Genders1-Code</gender1>
+```{r, gender1}
+#有辦法弄到小數點後三位嗎？
+gender1 <- lm(使用手機時間~ 性別, data = survey1)
+sumg1 <- tidy(gender1)
+
+genders1 <-
+  kable(sumg1, format = "html", align = "c", caption = "(Summary of gender1)") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("性別 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+</details>
+```{r}
+genders1
+```
+
+  
+觀察： 
+
+* 性別Women（女）的p-value为0.57539 > 0.05，代表性別Women（女）的係數估計在統計上不顯著。  
+
+* 所以，從該線性回歸的統計结果中無法得出性別和使用手機時間之間存在顯著關係的結論，模型對使用手機時間的解釋能力較弱。
+
+
+繪製Boxplot以更詳細的看出關係:  
+
+<details>
+  <boxplot1>Boxplot1-Code</boxplot1>
+```{r}
+# 将性别变量中的"男"替换为"Man"，"女"替换为"Women"
+survey1$性別 <- ifelse(survey1$性別 == "男", "Man", ifelse(survey1$性別 == "女", "Women", survey1$性別))
+
+median1 <- survey1 %>% group_by(性別) %>% summarise(median = median(使用手機時間))
+
+boxplot1 <-
+  ggplot(data = survey1, aes(x = 性別, y = 使用手機時間)) +
+  geom_boxplot() +
+  labs(x = "Gender", y = "Phone Using Time") +
+  scale_y_continuous(breaks=seq(0,400,by=50)) +
+  ggtitle("Gender vs Phone Using Time") +
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=24,color="#F4C2C2", family = "Trebuchet MS" ),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+
+``` 
+</details>
+
+```{r, out.width = "330px", out.height = "250px"}
+boxplot1
+```
+
+
+從該箱型圖可以觀察到以下的訊息：  
+
+* 女生的中位數相對男生來說較高，所以平均而言，清大女學生平均一天使用手機的時間，相對男生來說更高一點。  
+
+* 但因為兩個箱體的長度其實是差不多的，所以可以得到不同性別從整體來看，在使用手機的時長上，應該是沒有差到太多。  
+
+* 男生相對來說有較多的異常值，推測可能與玩遊戲的時間有關。
+  
+
+
+2. 使用手機時間和年級之間是否有關係？  
+
+<details>
+  <age1>Age1-Code</age1>
+```{r}
+age1 <- lm(使用手機時間~ 年級, data = survey1)
+suma1 <- tidy(age1)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+ages1 <-
+  kable(suma1, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("年級 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")%>%  
+  scroll_box(height = "200px")
+```
+
+</details>
+```{r}
+ages1
+``` 
+  
+  
+Age1的Summary表：  
+
+<details>
+  <age1sum>Age1sum-Code</age1sum>
+```{r}
+summary(age1)
+```
+
+</details>
+觀察：  
+
+* 碩二的年級估計值為-177.42，是所有年級裡最小的，且具有統計顯著性 (p < 0.001)。這表示相較於其他年級，碩二的學生平均使用手機時間較少。  
+* 同時可以觀察到所有的p值都小於0.01，代表年級對使用手機時間有統計上的顯著影響。但此模型的解釋能力相對較低，只能解釋使用手機時間變異的約31.97%。因此，在解釋學生使用手機時間的因素時，還可能存在其他未考慮到的因素或變量。
+  
+
+
+
+3. 使用手機時間和飲料杯之間是否有關係？  
+
+<details>
+  <drink1>Drink1-Code</drink1>
+```{r}
+drink1 <- lm(使用手機時間~ 飲料杯, data = survey1)
+sumd1 <- tidy(drink1)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+drinks1 <-
+  kable(sumd1, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("每週喝的飲料 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+drinks1
+```
+
+Drink1的Summary表：  
+
+<details>
+  <drink1sum>Age1sum-Code</drink1sum>
+```{r}
+summary(drink1)
+```
+
+</details>  
+觀察:  
+
+* 該線性回歸模型表明飲料杯數量對於使用手機時間具有顯著影響，因為其p-value（Pr(>|t|)）小於顯著性水平0.05。  
+
+* 系數估計顯示，每增加一個飲料杯，使用手機時間的預測值將增加15.017。  
+
+* 模型的適配度較低，多重決定係數為0.2767，說明使用飲料杯數量只能解釋使用手機時間變異的一部分。  
+
+因為飲料杯數量對於使用手機時間具有顯著影響，所以繪製Scatter Plot以更詳細的看一下趨勢:  
+
+<details>
+  <scatterd1>ScatterD1-Code</scatterd1>
+```{r}
+scatterd1 <-
+  ggplot(data = survey1, aes(x = 飲料杯, y = 使用手機時間)) +
+  geom_point() +
+  labs(x = "Drinks/w", y = "Phone Using Time") +
+  geom_smooth(method = "lm", se = FALSE, color = "#ADFF2F") +
+  ggtitle("Drinks/w VS Phone Using Time") +
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=24,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+```
+
+</details>
+```{r,warning=FALSE, out.width = "330px", out.height = "250px"}
+scatterd1
+```  
+
+觀察：  
+
+* 可以看到散點圖中的點大致呈現一個向上的趨勢，這意味著隨著飲料杯數量的增加，手機使用時間也呈現增加的趨勢。  
+
+* 線的斜率表示每增加一個飲料杯數量，手機使用時間預測值將增加。  
+
+總結來說，這張圖顯示了飲料杯數量與手機使用時間之間的正相關關係，隨著飲料杯數量的增加，手機使用時間也相應增加。  
+
+
+4. 使用手機時間和餐盒之間是否有關係？  
+
+<details>
+  <box1>Box1-Code</box1>
+```{r}
+box1 <- lm(使用手機時間~ 餐盒, data = survey1)
+sumb1 <- tidy(box1)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+boxs1 <-
+  kable(sumb1, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("每週吃的餐盒 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+boxs1
+```
+
+Box1的Summary表：  
+
+<details>
+  <box1sum>Box1sum-Code</box1sum>
+```{r}
+summary(box1)
+```
+
+</details>  
+
+觀察:  
+
+* 迴歸分析的結果顯示，餐盒數量對於手機使用時間的預測有一個正向的關係。估計的迴歸係數為3.829，表示每增加一個餐盒的數量，手機使用時間的預測值將增加3.829單位。  
+
+* p 值為0.116，大於0.05，因此無法拒絕虛無假設，表示餐盒數量對於手機使用時間的預測效果在統計上並不顯著。  
+
+
+#### C. 驗證每天使用手機的時間與忍受不用手機的時間是有關係的（以 Survey1為例，Survey2,3在Appendix ）  
+
+### Survey1:  
+
+<details>
+  <nophone1>Nophone1-Code</nophone1>
+```{r}
+nophone1 <- lm(使用手機時間~ 忍受手機時間, data = survey1)
+sumn1 <- tidy(nophone1)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+nos1 <-
+  kable(sumn1, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("忍受不用手機時間 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+nos1
+```
+
+Nos1的Summary表：  
+
+<details>
+  <nos1sum>Nos1sum-Code</nos1sum>
+```{r}
+summary(nophone1)
+```
+
+</details>  
+
+觀察:  
+
+* p 值為0.00178，顯示截距項對於手機使用時間的預測具有統計上的顯著性。  
+
+* 迴歸模型的多重決定係數為0.01034，說明忍受手機時間能夠解釋手機使用時間變異的約1.03％。然而，考慮到模型中的自由度和樣本量，調整後的多重決定係數為-0.003217，這個值比多重決定係數更低，說明模型的擬合度較差。  
+
+綜合來看，根據這個迴歸分析結果，忍受手機時間對於手機使用時間的預測效果在統計上並不顯著，且迴歸模型的擬合度相對較低。這意味著忍受手機時間可能不是一個強有力的預測因素，無法很好地解釋手機使用時間的變異。其他未納入分析的因素可能對手機使用時間更有影響。  
+
+
+#### D. 驗證上課方式的偏好和每天使用手機的時間有關係（以Survey3為例）  
+
+1. 進行Tapply()分析：  
+
+<details>
+  <mean3>Mean3-Code</mean3>
+```{r}
+means <- tapply(survey3$使用手機時間, survey3$上課方式, mean, na.rm = TRUE)
+means3t <- data.frame(選的上課方式 = names(means), 平均使用手機時間 = means)
+
+
+means3 <-
+  kable(means3t, format = "html", align = "c", row.names = F) %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("平均使用手機時間 by 上課方式" = 2)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details> 
+
+```{r}
+means3
+```  
+
+觀察：  
+
+* 上述的結果表示在這個資料集中，根據學生的上課方式，可以觀察到不同的平均使用手機時間。其中，選擇「線上教學」方式上課的學生平均使用手機時間較長，約為 71.53 分鐘，而選擇「實體課」方式上課的學生平均使用手機時間較短，約為 41.59 分鐘。  
+
+* 這個結果可能暗示著學生的上課方式與他們的手機使用時間之間存在某種關係，可以進一步分析和探索這兩個變數之間的關聯性。  
+
+
+2. 進行t檢定:  
+
+<details>
+  <ttest3>Ttest3-Code</ttest3>
+```{r}
+survey3$上課方式 <- ifelse(survey3$上課方式 == "實體課", 1, 0)
+
+ttest3 <- t.test(survey3$使用手機時間 ~ survey3$上課方式)
+```
+
+</details>  
+
+```{r}
+ttest3
+```
+
+觀察:  
+
+* 根據獨立樣本t檢驗的結果，我們沒有足夠的證據來支持「使用手機時間」在「上課方式」的不同組別之間存在顯著差異的假設。  
+
+* 理由：p值(0.1747)大於顯著性水平，意味著無法拒絕零假設，即兩組之間的平均值差異可能是由隨機因素引起的。信賴區間(-13.60907到73.46988)顯示了平均值差異的範圍，但包含0，進一步支持了沒有顯著差異的結論。  
+
+3. 二項式回歸分析  
+
+<details>
+  <fisher3>Fisher3-Code</fisher3>
+```{r}
+threshold <- median(survey3$使用手機時間)
+survey3$超時使用 <- ifelse(survey3$使用手機時間 > threshold,1,0)
+
+model <- glm(超時使用 ~ 上課方式, data = survey3, family = binomial)
+
+fisher3 <- summary(model)
+fisher3
+```
+
+</details>
+
+觀察:  
+
+* "上課方式1"的係數估計值為-0.7987，表示相對於"上課方式0"（即線上教學），選擇"上課方式1"（即實體課）的個體在超時使用的機率上有所降低。  
+
+* Null deviance為106.63，Residual deviance為103.63，說明加入上課方式後模型的擬合效果有所改善。  
+
+綜合上述結果，可以得出結論：在該邏輯回歸模型中，上課方式對於預測超時使用的影響可能存在，但結果並不顯著（p-value = 0.0866）。需要進一步的分析和調整模型，或者增加更多的樣本數據，以確定上課方式是否與超時使用有關聯。  
+
+
+#### E. 三份資料的視覺化比較  
+
+1. 每天使用手機時間的核密度圖比較：  
+
+<details>
+  <den>Den-Code</den>
+```{r, out.width = "350px", out.height = "250px"}
+density1 <- density(survey1$使用手機時間)
+density2 <- density(survey2$使用手機時間)
+density3 <- density(survey3$使用手機時間)
+```
+
+</details>
+```{r, out.width = "350px", out.height = "250px"}
+den <- plot(density1, main = "Kernel Density Plot of Phone Using Time", xlab = "Phone Using Time", ylab = "Density", xlim = c(0, 1000), ylim = c(0, 0.01), col = "#800080") 
+lines(density2, col = "#F4C2C2")  
+lines(density3, col = "#6b8e23")  
+legend("topright", legend = c("Survey1", "Survey2", "Survey3"), col = c("#800080", "#F4C2C2", "#6b8e23"), lty = 1)  
+title(main = "Kernel Density Plot of Phone Using Time", col.main = "#F4C2C2", font.main = 2)
+```
+  
+觀察:  
+
+* 從圖表裡可以看到，三份數據的高峰部分都位在0-50/min之間，代表綜合看全部數據來說，清大絕大部分學生每天大約花50分鐘左右滑手機。  
+
+* 可以明顯看出，三份資料所呈現出來的線的走勢，幾乎是高度重合的，代表這三屆學生的手機使用習慣還是滿類似的。
+
+2. 每天可以忍受不用手機時間的核密度圖比較：  
+
+<details>
+  <denno>Denno-Code</denno>
+```{r, out.width = "300px", out.height = "250px"}
+density_plot1 <- ggplot(data = survey1, aes(x = 忍受手機時間)) +
+  geom_density() + 
+  labs(title = "Survey1", x = "No Phone Time", y = "Density") + 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=22,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+
+density_plot2 <- ggplot(data = survey2, aes(x = 忍受手機時間)) +
+  geom_density() +
+  labs(title = "Survey2", x = "No Phone Time", y = "Density") + 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=22,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+
+density_plot3 <- ggplot(data = survey3, aes(x = 忍受手機時間)) +
+  geom_density() +
+  labs(title = "Survey3", x = "No Phone Time", y = "Density") + 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=22,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+```
+
+</details>
+
+```{r, out.width = "350px", out.height = "250px"}
+combined_plot1 <- grid.arrange(density_plot1, density_plot2, density_plot3, nrow = 1)
+```
+  
+合併上面三張圖：  
+
+```{r, out.width = "330px", out.height = "250px"}
+combined_plot2 <- density_plot1 + geom_density(data = survey2, aes(x = 忍受手機時間), fill = "#800080", alpha = 0.5) +
+  geom_density(data = survey3, aes(x = 忍受手機時間), fill = "#FFFFF0", alpha = 0.5) +
+  labs(title = "Comparing Kernel Density Plots", x = "No Phone Time", y = "Density") + scale_fill_manual(values = c("black", "#800080", "#FFFFF0"))
+
+combined_plot2
+```
+  
+觀察:  
+
+* 因為三條線的走勢大致類似，所以可以得知可以忍受不使用手機的時長，對於三個不同年的學生來說，是類似的。  
+
+* 最高峰是位在25/min左右，代表三年的學生可以忍受不使用手機的平均時長，大約在25分鐘左右，有點出乎意料的短。  
+
+3. 計算三份資料每個年級的學生「平均使用手機的時間」，並加以比較：  
+
+#### Survey1的年級比較點線圖：  
+
+<details>
+  <line1>Line1-Code</line1>
+```{r, out.width = "330px", out.height = "250px"}
+survey1$年級 <- as.factor(survey1$年級)
+
+survey1$年級 <- recode(survey1$年級, "大一" = "1stY", "大二" = "2ndY", "大三" = "3rdY", "大四" = "4thY" , "大五"="5thY" , "碩一"="1stGY" , "碩二"="2ndGY")
+
+survey1$年級 <- factor(survey1$年級, levels = c("1stY", "2ndY", "3rdY", "4thY", "5thY", "1stGY", "2ndGY"))
+
+sur1_sum <- survey1 %>%
+  group_by(年級) %>%
+  summarise(平均使用手機時間 = mean(使用手機時間))
+
+line_plot1 <- ggplot(sur1_sum, aes(x = 年級, y = 平均使用手機時間,group=1)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Different Grade's Average Phone Using Time(2020)", x = "Grade", y = "Average Phone Using Time") +
+  scale_x_discrete(limits = c("1stY", "2ndY", "3rdY", "4thY", "5thY", "1stGY", "2ndGY")) + 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=20,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+```
+
+</details>
+
+```{r, out.width = "330px", out.height = "250px"}
+line_plot1
+```
+  
+觀察：  
+
+* 很明顯的可以看出，平均使用手機時間最長的是大一新生，而隨著年級增長，手機使用時間也隨著變少，推測應該是與課業變繁重的原因有關。  
+
+#### Survey2的年級比較點線圖：  
+
+<details>
+  <line2>Line2-Code</line2>
+```{r, out.width = "330px", out.height = "250px"}
+survey2$年級 <- as.factor(survey2$年級)
+
+survey2$年級 <- recode(survey2$年級, "大一" = "1stY", "大二" = "2ndY", "大三" = "3rdY", "大四" = "4thY" , "碩一"="1stGY" , "碩二"="2ndGY" , "碩三"="3rdGY" , "博士班"="PhD")
+
+survey2$年級 <- factor(survey2$年級, levels = c("1stY", "2ndY", "3rdY", "4thY" , "1stGY", "2ndGY" , "3rdGY" ,"PhD" ))
+
+sur2_sum <- survey2 %>%
+  group_by(年級) %>%
+  summarise(平均使用手機時間 = mean(使用手機時間))
+
+line_plot2 <- ggplot(sur2_sum, aes(x = 年級, y = 平均使用手機時間,group=1)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Different Grade's Average Phone Using Time(2021)", x = "Grade", y = "Average Phone Using Time") +
+  scale_x_discrete(limits = c("1stY", "2ndY", "3rdY", "4thY", "1stGY", "2ndGY", "3rdGY" ,"PhD" ))+ 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=20,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+
+line_plot2
+```
+
+</details>
+
+觀察：  
+
+* 很明顯的可以看出，平均使用手機時間最長的是研一新生，這是一個滿出乎我意料的結果，但思考了一下發現，應該是與每個年級的參與統計人數有關係，才導致了這樣的結果。  
+
+* 此圖則沒有像是Survey1的圖一樣，隨年級增長，手機使用時間也隨之變少的趨勢了。  
+
+
+#### Survey3的年級比較點線圖：  
+
+<details>
+  <line3>Line3-Code</line3>
+```{r, out.width = "330px", out.height = "250px"}
+survey3$年級 <- as.factor(survey3$年級)
+
+survey3$年級 <- recode(survey3$年級, "大一" = "1stY", "大二" = "2ndY", "大三" = "3rdY", "大四" = "4thY" , "碩一"="1stGY" , "碩二"="2ndGY" , "博士班"="PhD")
+
+survey3$年級 <- factor(survey3$年級, levels = c("1stY", "2ndY", "3rdY", "4thY" , "1stGY", "2ndGY" , "PhD" ))
+
+sur3_sum <- survey3 %>%
+  group_by(年級) %>%
+  summarise(平均使用手機時間 = mean(使用手機時間))
+
+line_plot3 <- ggplot(sur3_sum, aes(x = 年級, y = 平均使用手機時間,group=1)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Different Grade's Average Phone Using Time(2022)", x = "Grade", y = "Average Phone Using Time") +
+  scale_x_discrete(limits = c("1stY", "2ndY", "3rdY", "4thY" , "1stGY", "2ndGY" , "PhD")) + 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=20,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+
+line_plot3
+```
+
+</details>
+
+觀察：  
+
+* 很明顯的可以看出，平均使用手機時間最長的是三年級生。  
+
+* 此圖則是在三年級達到高峰後，隨著年齡增長，平均使用時間有下降的趨勢。
+
+#### 將三份圖表合併顯示
+
+<details>
+  <linea>Linea-Code</linea>
+```{r, out.width = "330px", out.height = "250px"}
+combined_data <- bind_rows(
+  mutate(sur1_sum, dataset = "2020"),
+  mutate(sur2_sum, dataset = "2021"),
+  mutate(sur3_sum, dataset = "2022")
+)
+
+combined_plot <- ggplot(combined_data, aes(x = 年級, y = 平均使用手機時間, group = dataset, color = dataset)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Different Grade's Average Phone Using Time", x = "Grade", y = "Average Phone Using Time") +
+  scale_x_discrete(limits = c("1stY", "2ndY", "3rdY", "4thY","5thY", "1stGY", "2ndGY", "3rdGY", "PhD")) +
+  scale_color_manual(values = c("2020" = "#800080", "2021" = "steelblue", "2022" = "#ADFF2F"))  + 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=20,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+```
+
+
+</details>
+
+```{r, out.width = "330px", out.height = "250px"}
+combined_plot
+```
+
+觀察：  
+
+* 2020與2022的趨勢是比較類似的，若是忽略2021突然在碩一的高點，三份資料皆呈現，平均使用手機時間隨著年齡增長，而有下降的趨勢。  
+
+#### 三份資料所有不同年級學生的平均使用手機時間比較圖  
+
+<details>
+  <bara>Bara-Code</bara>
+```{r, out.width = "330px", out.height = "250px"}
+combined_summary <- bind_rows(sur1_sum, sur2_sum, sur3_sum)
+
+bar_plot <- ggplot(combined_summary, aes(x = 年級, y = 平均使用手機時間)) +
+  geom_bar(stat = "identity", fill = "#FFFFF0") +
+  labs(title = "Different Grade's Average Phone Using Time", x = "Grade", y = "Average Phone Using Time") + 
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=20,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+```
+
+</details>
+```{r, out.width = "330px", out.height = "250px"}
+bar_plot
+```
+
+觀察：  
+
+* 綜觀這份長條圖，可以發現，平均而言大一新生使用手機時長是最多的，且整體而言都呈現使用手機時間隨年級增長而下降的趨勢。  
+
+* 碩一因為該年級的樣本數較少，導致平均下來的使用時間較多，才沒有遵守上面的趨勢。
+
+## 五、總結  
+#### 根據上面的統計資料顯示:  
+
+1. 單一因素和每天使用手機的時間之間並沒有絕對的因果關係；雖然不能靠單一因素直接預測使用時間，但若是同時考慮多個因素，則有可能可以大致上預測出來。  
+
+2. 個人每天「使用手機的時間」與個人每天可以「忍受不使用手機的時間」，是沒有絕對關係的。  
+
+3. 上課方式的偏好與使用手機時間的長短，具有一定的關係，普遍上選擇實體課的同學，平均使用手機的時間較少；而選擇線上上課的同學，則更常在一天當中使用手機。  
+
+4. 綜觀三份資料，可以發現平均使用手機的時長，會隨著年級增長而減少。
+
+## 六、結語 
+
+#### 1.  
+首先先感謝老師這一個學期的教導，讓我從對R一無所知，到能畫出幾個圖，到能針對這些圖進行應用與分析。看到自己能獨自產出好看的圖，其實是一件滿開心的事情，真的很謝謝老師的教導。  
+
+#### 2. 我從哪裡得到我的專題的想法的？  
+算是從我的朋友的經驗，和幾個調查大學生的youtubeu街訪影片聯想到的。  
+
+#### 3. 我用了哪些新的套件？  
+我用了 broom, shiny, lmtest, extrafont, knitr 等新的套件。  
+
+#### 4. 整份專題裡最困難的部分？  
+我認為最難的部分是在做完第一次分析之後，要再選擇下一個分析工具，以確保第一次分析的結果是有足夠證據的時候；因為我的統計學的還不是很透徹，所以在驗證結果的時候會很怕驗證錯，因此最後我就決定多嘗試幾個驗證方法，以佐證最一開始得到的結果，應該會更具有說服力。  
+
+## 七、Appendix 
+
+#### B. 分析不同變因（性別、年級、飲料杯、餐盒）和手機使用時間之間的相關性  
+分析方法：個別針對每個因素和使用時間進行「迴歸分析」，並針對因素間的關係繪製統計圖。  
+
+### Survey2:  
+
+1. 使用手機時間和性別之間是否有關係？
+
+<details>
+  <gender2>Genders2-Code</gender2>
+```{r, gender2}
+#有辦法弄到小數點後三位嗎？
+gender2 <- lm(使用手機時間~ 性別, data = survey2)
+sumg2 <- tidy(gender2)
+
+genders2 <-
+  kable(sumg2, format = "html", align = "c", caption = "(Summary of gender2)") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("性別 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+</details>
+```{r}
+genders2
+```
+
+觀察：  
+
+* p 值為0.348，大於0.05，因此無法拒絕虛無假設，表示性別對於手機使用時間的預測效果在統計上並不顯著。  
+
+繪製Boxplot以更詳細的看出關係
+<details>
+  <boxplot2>Boxplot2-Code</boxplot2>
+```{r}
+# 将性别变量中的"男"替换为"Man"，"女"替换为"Women"
+survey2$性別 <- ifelse(survey2$性別 == "男", "Man", ifelse(survey2$性別 == "女", "Women", survey2$性別))
+
+median2 <- survey2 %>% group_by(性別) %>% summarise(median = median(使用手機時間))
+
+boxplot2 <-
+  ggplot(data = survey2, aes(x = 性別, y = 使用手機時間)) +
+  geom_boxplot() +
+  labs(x = "Gender", y = "Phone Using Time") +
+  scale_y_continuous(breaks=seq(0,400,by=50)) +
+  ggtitle("Gender vs Phone Using Time") +
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=24,color="#F4C2C2", family = "Trebuchet MS" ),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+``` 
+</details>
+
+```{r, out.width = "330px", out.height = "250px"}
+boxplot2
+```
+  
+從該箱型圖可以觀察到以下的訊息：  
+
+* 男生的中位數相對女生來說較高，所以平均而言，清大男學生平均一天使用手機的時間，相對女生來說更高一點。  
+
+* 但因為兩個箱體的長度其實是差不多的，所以可以得到不同性別從整體來看，在使用手機的時長上，應該是沒有差到太多。  
+
+* 女生相對來說有較多的異常值，推測可能與看劇的時間有關。  
+
+
+2. 使用手機時間和年級之間是否有關係?
+
+<details>
+  <age2>Age2-Code</age2>
+```{r}
+age2 <- lm(使用手機時間~ 年級, data = survey2)
+suma2 <- tidy(age2)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+ages2 <-
+  kable(suma2, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("年級 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")%>%  
+  scroll_box(height = "200px")
+```
+
+</details>
+```{r}
+ages2
+``` 
+  
+  
+Age2的Summary表：  
+
+<details>
+  <age2sum>Age2sum-Code</age2sum>
+```{r}
+summary(age2)
+```
+
+</details>
+觀察：  
+
+* 迴歸分析的結果顯示，年級對於手機使用時間的預測有一些影響，但不是所有年級都具有統計上顯著的影響。根據估計的迴歸係數，年級碩一的預測值相對較高，估計係數為236.000，年級大一的預測值次之，估計係數為84.333。其他年級的迴歸係數則較低，並且未達到統計上的顯著水平。  
+
+* 在統計上，只有年級碩一的迴歸係數顯著，其 p 值為0.0413，小於通常的顯著性水平α=0.05。這表示在這個模型中，只有年級碩一對於手機使用時間的預測具有統計上顯著的影響。  
+
+* 調整後的多重決定係數（Adjusted R-squared）只有0.01047，這表示在考慮到模型中的自由度和樣本量後，年級對於手機使用時間的預測效果並不理想。  
+
+綜合來看，根據這個迴歸分析結果，年級對於手機使用時間的預測具有一定的影響，但只有年級碩一的影響在統計上是顯著的。模型的拟合度相對較低，說明年級本身可能並不是一個強有力的預測因素，還有其他未納入分析的因素可能對手機使用時間更有影響。  
+
+3. 使用手機時間和飲料杯之間是否有關係？  
+
+<details>
+  <drink2>Drink2-Code</drink2>
+```{r}
+drink2 <- lm(使用手機時間~ 飲料杯, data = survey2)
+sumd2 <- tidy(drink2)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+drinks2 <-
+  kable(sumd2, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("每週喝的飲料 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+drinks2
+```
+
+Drink2的Summary表：  
+
+<details>
+  <drink2sum>Age2sum-Code</drink2sum>
+```{r}
+summary(drink2)
+```
+
+</details>  
+觀察:  
+
+* p 值為0.658，大於0.05，因此無法拒絕虛無假設，表示飲料杯數量對於手機使用時間的預測效果在統計上並不顯著。  
+
+* 迴歸模型的多重決定係數（Multiple R-squared）為0.002343，表示飲料杯數量能夠解釋手機使用時間變異的極小部分，僅為0.2343％。調整後的多重決定係數（Adjusted R-squared）則為-0.009534，這個值甚至低於多重決定係數，說明模型的擬合度非常低。  
+
+綜合來看，根據這個迴歸分析結果，飲料杯數量對於手機使用時間的預測效果在統計上並不顯著，且迴歸模型的拟合度非常低。這意味著飲料杯數量可能不是一個強有力的預測因素，無法很好地解釋手機使用時間的變異。其他未納入分析的因素可能對手機使用時間更有影響。  
+
+
+4. 使用手機時間和餐盒之間是否有關係？  
+
+<details>
+  <box2>Box2-Code</box2>
+```{r}
+box2 <- lm(使用手機時間~ 餐盒, data = survey2)
+sumb2 <- tidy(box2)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+boxs2 <-
+  kable(sumb2, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("每週吃的餐盒 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+boxs2
+```
+
+Box2的Summary表：  
+
+<details>
+  <box2sum>Box2sum-Code</box2sum>
+```{r}
+summary(box2)
+```
+
+</details>  
+
+觀察:  
+
+* p 值為0.8295，這個 p 值大於通常的顯著性水平α=0.05，表示結果在統計上不顯著，無法拒絕虛無假設，即餐盒數量對於手機使用時間的預測效果不顯著。  
+
+* 迴歸模型的多重決定係數為0.0005549，表示餐盒數量能夠解釋手機使用時間變異的極小部分。調整後的多重決定係數（Adjusted R-squared）為-0.01134，這個值比多重決定係數更小，說明模型的拟合度非常低。  
+
+綜合來看，根據這個迴歸分析結果，餐盒數量對於手機使用時間的預測效果在統計上並不顯著，且迴歸模型的拟合度非常低。這意味著餐盒數量對於手機使用時間的解釋力很弱，其他未納入分析的因素可能對手機使用時間更有影響。  
+
+
+### Survey3:  
+
+1. 使用手機時間和性別之間是否有關係？
+
+<details>
+  <gender3>Genders3-Code</gender3>
+```{r, gender3}
+#有辦法弄到小數點後三位嗎？
+gender3 <- lm(使用手機時間~ 性別, data = survey3)
+sumg3 <- tidy(gender3)
+
+genders3 <-
+  kable(sumg3, format = "html", align = "c", caption = "(Summary of gender3)") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("性別 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+</details>
+```{r}
+genders3
+```
+
+觀察：  
+
+* p 值為0.434，大於0.05，因此無法拒絕虛無假設，表示性別對於手機使用時間的預測效果在統計上並不顯著。  
+
+繪製Boxplot以更詳細的看出關係
+<details>
+  <boxplot3>Boxplot3-Code</boxplot3>
+```{r}
+# 将性别变量中的"男"替换为"Man"，"女"替换为"Women"
+survey3$性別 <- ifelse(survey3$性別 == "男", "Man", ifelse(survey3$性別 == "女", "Women", survey3$性別))
+
+median3 <- survey3 %>% group_by(性別) %>% summarise(median = median(使用手機時間))
+
+boxplot3 <-
+  ggplot(data = survey3, aes(x = 性別, y = 使用手機時間)) +
+  geom_boxplot() +
+  labs(x = "Gender", y = "Phone Using Time") +
+  scale_y_continuous(breaks=seq(0,400,by=50)) +
+  ggtitle("Gender vs Phone Using Time") +
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=24,color="#F4C2C2", family = "Trebuchet MS" ),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+``` 
+</details>
+
+```{r, out.width = "330px", out.height = "250px"}
+boxplot3
+```
+  
+從該箱型圖可以觀察到以下的訊息：  
+
+* 女生的中位數相對男生來說較高，所以平均而言，清大女學生平均一天使用手機的時間，相對男生來說更高一點。  
+
+* 男生的箱體長度大於女生的，所以可以得到從整體來看，在使用手機的時長上，男生應該花了較多的時間。  
+
+  
+
+2. 使用手機時間和年級之間是否有關係？  
+
+<details>
+  <age3>Age3-Code</age3>
+```{r}
+age3 <- lm(使用手機時間~ 年級, data = survey3)
+suma3 <- tidy(age3)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+ages3 <-
+  kable(suma3, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("年級 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")%>%  
+  scroll_box(height = "200px")
+```
+
+</details>
+```{r}
+ages3
+```  
+
+觀察：  
+
+* 年級的各個水平的顯著性均大於0.05，因此無法得出年級與使用手機時間之間存在顯著關係的結論。  
+
+3. 使用手機時間和飲料杯之間是否有關係？  
+
+<details>
+  <drink3>Drink3-Code</drink3>
+```{r}
+drink3 <- lm(使用手機時間~ 飲料杯, data = survey3)
+sumd3 <- tidy(drink3)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+drinks3 <-
+  kable(sumd3, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("每週喝的飲料 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+drinks3
+```
+
+觀察:  
+
+* 由於飲料杯的顯著性水平為0.119，大於0.05，我們無法得出飲料杯和使用手機時間之間存在顯著關係的結論。  
+
+
+4. 使用手機時間和餐盒之間是否有關係？  
+
+<details>
+  <box3>Box3-Code</box3>
+```{r}
+box3 <- lm(使用手機時間~ 餐盒, data = survey3)
+sumb3 <- tidy(box3)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+boxs3 <-
+  kable(sumb3, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("每週吃的餐盒 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+boxs3
+```
+
+Box3的Summary表：  
+
+<details>
+  <box3sum>Box3sum-Code</box3sum>
+```{r}
+summary(box3)
+```
+
+</details>  
+
+觀察:  
+
+* 餐盒的 t 值為 2.389，表示餐盒對使用手機時間的影響在統計上是顯著的。餐盒的 p 值為 0.0194，小於顯著性水平（通常為 0.05），說明餐盒與使用手機時間之間的關係在統計上是顯著的。  
+
+* 餐盒與使用手機時間之間存在顯著的關係。餐盒的增加與使用手機時間的增加呈正相關。然而，需要注意的是，餐盒只能解釋使用手機時間變異的約 7.073%，其他因素可能也對使用手機時間產生影響。  
+
+因為餐盒數量對於使用手機時間具有顯著影響，所以繪製Scatter Plot以更詳細的看一下趨勢:  
+
+<details>
+  <scatterd1>ScatterD1-Code</scatterd1>
+```{r}
+scatterd3 <-
+  ggplot(data = survey3, aes(x = 餐盒, y = 使用手機時間)) +
+  geom_point() +
+  labs(x = "Lunch box/w", y = "Phone Using Time") +
+  geom_smooth(method = "lm", se = FALSE, color = "#ADFF2F") +
+  ggtitle("Lunch box/w VS Phone Using Time") +
+  theme(
+                legend.position="none",
+                plot.title=element_text(size=24,color="#F4C2C2", family = "Trebuchet MS"),
+                panel.background = element_rect(fill = "#F4C2C2")
+                )
+```
+
+</details>
+```{r,warning=FALSE, out.width = "330px", out.height = "250px"}
+scatterd3
+```  
+
+觀察：  
+
+* 可以看到散點圖中的點大致呈現一個向上的趨勢，這意味著隨著餐盒數量的增加，手機使用時間也呈現增加的趨勢。  
+
+* 線的斜率表示每增加一個餐盒數量，手機使用時間預測值將增加。  
+
+總結來說，這張圖顯示了每週使用的餐盒數量與手機使用時間之間的正相關關係，隨著餐盒數量的增加，手機使用時間也相應增加。  
+
+#### C. 驗證每天使用手機的時間與忍受不用手機的時間是有關係的  
+
+### Survey2:  
+
+<details>
+  <nophone2>Nophone2-Code</nophone2>
+```{r}
+nophone2 <- lm(使用手機時間~ 忍受手機時間, data = survey2)
+sumn2 <- tidy(nophone2)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+nos2 <-
+  kable(sumn2, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("忍受不用手機時間 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+nos2
+```
+
+Nos2的Summary表：  
+
+<details>
+  <nos2sum>Nos2sum-Code</nos2sum>
+```{r}
+summary(nophone2)
+```
+
+</details>  
+
+觀察:  
+
+*  p 值為0.971。由於 p值大於顯著性水平α=0.05，無法拒絕虛無假設，表示忍受手機時間與手機使用時間之間的關係在統計上不顯著。  
+
+* 調整後的多重決定係數為-0.01189，表示模型的拟合度非常低，忍受手機時間對於手機使用時間的預測效果極低。  
+
+綜合來看，根據這個迴歸分析結果，忍受手機時間與手機使用時間之間沒有明顯的線性關係，且迴歸模型的拟合度非常低。這意味著忍受手機時間可能不是一個有效的預測因素，無法很好地解釋手機使用時間的變異。  
+
+### Survey3:  
+
+<details>
+  <nophone3>Nophone3-Code</nophone3>
+```{r}
+nophone3 <- lm(使用手機時間~ 忍受手機時間, data = survey3)
+sumn3 <- tidy(nophone3)[,c("term", "estimate", "std.error", "statistic", "p.value")]
+
+nos3 <-
+  kable(sumn3, format = "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  add_header_above(c("忍受不用手機時間 vs 使用手機時間" = 5)) %>%
+  column_spec(1, bold = T, color = "#F4C2C2") %>%
+  row_spec(0, bold = T, color = "#FFFFF0", background = "#F4C2C2")
+```
+
+</details>
+```{r}
+nos3
+```
+
+Nos3的Summary表：  
+
+<details>
+  <nos3sum>Nos3sum-Code</nos3sum>
+```{r}
+summary(nophone3)
+```
+
+</details>  
+
+觀察:  
+
+* 迴歸係數為-0.3245，然而該係數在統計上並不顯著（p-value為0.156）。  
+* 迴歸模型的多重決定係數為0.02671，表示忍受手機時間能夠解釋使用手機時間變異的約2.671%。這個值較低，意味著模型對於使用手機時間的解釋能力有限，有很大一部分使用手機時間的變異無法由忍受手機時間來解釋。
+
+綜上所述，根據這個分析結果，無法得出明確的結論，表明「忍受手機時間」與「使用手機時間」之間存在顯著的關係。
+
+
+
+
+
